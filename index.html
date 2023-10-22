@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <style>
+    * {
+      user-select: none;
+      -webkit-user-drag: none;
+      -moz-user-select: none;
+    }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: rgba(0, 0, 0, 0);
+    }
+
+    .main {
+      position: relative;
+    }
+
+
+    .face {
+      top: 0;
+      position: absolute;
+      height: 100%;
+    }
+
+    .start {
+      top: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      border-color: black;
+      border-style: solid;
+      border-width: 5px;
+      box-sizing: border-box;
+      height: 100%;
+      width: 100%;
+    }
+
+
+    .invisible {
+      opacity: 0;
+    }
+
+  </style>
+</head>
+
+<body>
+  <img id="normal" class="face invisible">
+  <img id="mouthHalf" class="face invisible">
+  <img id="mouthFull" class="face invisible">
+  <img id="eyeHalf" class="face invisible">
+  <img id="eyeFull" class="face invisible">
+
+  <div id="info" class="start">
+    <select id="selectInputDevice">
+      <option value="" hidden>入力デバイスを指定</option>
+    </select>
+  </div>
+</body>
+
+<script src="config.json.js"></script>
+<script>
+  const selectInputDevice = document.getElementById("selectInputDevice")
+  const info = document.getElementById("info")
+
+  navigator.mediaDevices.enumerateDevices({ audio: true })
+    .then(devices => {
+      devices.forEach((device) => {
+        console.log(device)
+        if (device.kind != "audioinput") {
+          return
+        }
+        let label = device.label
+        if (label == "") {
+          label = "Default"
+        }
+        selectInputDevice.innerHTML += `<option value="${device.deviceId}">${label}</option>`
+      })
+    })
+
+  // マイク入力
+  let micEnabled = false
+  selectInputDevice.addEventListener("change", function (e) {
+    console.log(e)
+    if (micEnabled) return
+
+    // 画像
+    selectInputDevice.remove()
+    info.classList.add("invisible")
+    setFace(0)
+    changeFace("normal")
+
+    //マイク
+    navigator.webkitGetUserMedia(
+      {
+        audio: {
+          deviceId: selectInputDevice.value
+        }
+      },
+      function (stream) {
+        micEnabled = true
+        // 入力
+        console.log(stream)
+
+        // セットアップ
+        const audioCtx = new AudioContext()
+        const analyser = audioCtx.createAnalyser()
+        const spectrumData = new Uint8Array(analyser.frequencyBinCount)
+
+        // 接続
+        const source = audioCtx.createMediaStreamSource(stream);
+        source.connect(analyser);
+        // 更新
+        let n = 0
+        setInterval(function () {
+          analyser.getByteFrequencyData(spectrumData)
+          // 口を開かせるかどうか
+          let isMouthOpenAttacked = false
+          spectrumData.forEach((value) => {
+            if (value > 256 * (config.mouth.attack / 100)) {
+              isMouthOpenAttacked = true
+            }
+          })
+          shouldMouthOpen = isMouthOpenAttacked
+
+        }, config.voice_check)
+      },
+      function (err) {
+        info.classList.remove("invisible")
+        info.innerText = `Failed Stream: ${err}`
+        window.close()
+      }
+    );
+  })
+
+  // 画像の処理
+  let mouthStep = 0;          // 口の状態
+  let beforeMouthStep = 0;    // 1ループ前の口の状態
+  let shouldMouthOpen = true; // 口を開かせるか
+  let mouthAnimationCount = 0;
+  setInterval(function () {
+    if (micEnabled) {
+      // 口の処理
+      beforeMouthStep = mouthStep
+      if (mouthAnimationCount == config.mouth.animation_time) {
+        mouthAnimationCount = 0
+        if (shouldMouthOpen) { // 開ける
+          mouthStep = Math.min(mouthStep + 1, 2)
+        } else { // 閉じる
+          mouthStep = Math.max(mouthStep - 1, 0)
+        }
+      }
+      mouthAnimationCount = Math.min(mouthAnimationCount + 1, config.mouth.animation_time)
+      // 口
+      if (beforeMouthStep != mouthStep) {
+        switch (mouthStep) {
+          case 0:
+            changeFace("normal")
+            break
+          case 1:
+            changeFace("mouthHalf")
+            break
+          case 2:
+            changeFace("mouthFull")
+            break
+        }
+      }
+
+      if (mouthStep == 0) {
+        Blink()
+      }
+    }
+  }, 1)
+
+  // 瞬き
+  let blinkStep = 0; // 口の状態
+  let blinkCoolDown = 500; // 瞬きの間隔
+  let blinkCoolDownCount = 0;
+  let blinkAnimationCount = 0;
+  function Blink() {
+    if (blinkCoolDownCount == blinkCoolDown) {
+      if (blinkAnimationCount == config.blink.animation_time) {
+        blinkStep++
+        blinkAnimationCount = 0
+        switch (blinkStep) {
+          case 1:
+            changeFace("eyeHalf")
+            break
+          case 2:
+            changeFace("eyeFull")
+            break
+          case 3:
+            changeFace("eyeHalf")
+            break
+          case 4:
+            changeFace("normal")
+            blinkStep = 0
+            blinkCoolDownCount = 0
+            blinkCoolDown = Math.floor((Math.random() * (config.blink.cool_down_max - config.blink.cool_down_min)) + config.blink.cool_down_min)
+            break
+        }
+      }
+      blinkAnimationCount = Math.min(blinkAnimationCount + 1, config.blink.animation_time)
+    }
+    blinkCoolDownCount = Math.min(blinkCoolDownCount + 1, blinkCoolDown)
+  }
+
+  // 特殊処理
+  let faceLock = false
+  document.body.addEventListener("keydown", function (e) {
+    console.log(e)
+    switch (true) {
+      case (e.shiftKey && e.key == "Escape"):
+        window.close()
+        break
+      case (e.shiftKey && e.key == "E"):
+        if (!faceLock) {
+          changeFace("eyeFull")
+          faceLock = true
+        } else {
+          faceLock = false
+          changeFace("normal")
+        }
+        break
+      case (e.shiftKey && e.key == "M"):
+        if (!faceLock) {
+          changeFace("mouthFull")
+          faceLock = true
+        } else {
+          faceLock = false
+          changeFace("normal")
+        }
+      case (!isNaN(e.key)):
+        index = parseInt(e.key, 10)
+        index--
+        if (index == -1) {
+          index = 9
+        }
+        setFace(index)
+    }
+  })
+
+  // 画像変更
+  function setFace(index = 0) {
+    document.getElementById("normal").src = config.face[index].normal
+    document.getElementById("mouthHalf").src = config.face[index].mouth_half_open
+    document.getElementById("mouthFull").src = config.face[index].mouth_full_open
+    document.getElementById("eyeHalf").src = config.face[index].eye_half_open
+    document.getElementById("eyeFull").src = config.face[index].eye_full_open
+  }
+
+  // 表情変更
+  function changeFace(face = "normal") {
+    if (faceLock) {
+      return
+    }
+    document.getElementById("normal").classList.add("invisible")
+    document.getElementById("mouthHalf").classList.add("invisible")
+    document.getElementById("mouthFull").classList.add("invisible")
+    document.getElementById("eyeHalf").classList.add("invisible")
+    document.getElementById("eyeFull").classList.add("invisible")
+
+    document.getElementById(face).classList.remove("invisible")
+  }
+
+
+</script>
+
+</html>

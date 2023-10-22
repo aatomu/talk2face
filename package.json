@@ -1,0 +1,13 @@
+{
+  "main": "index.html",
+  "name": "talk2face",
+  "window": {
+    "title": "talk2face",
+    "icon": "icon.png",
+    "position":"center",
+    "width": 500,
+    "height": 500,
+    "resizable":true,
+    "always_on_top":false
+  }
+}
