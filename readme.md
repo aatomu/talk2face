@@ -5,7 +5,7 @@
 ## 動作環境
 nw.js : `v0.80.1`
 chrome: `118.0.5993.70`
-### How To Use(nw.js Browser Like)
+### How To Use(chrome Browser Like)
 1. `config.json.js`を編集する
 2. `index.html`を開く
 3. 入力デバイスを指定する  
