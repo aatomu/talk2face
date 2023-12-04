@@ -39,7 +39,7 @@ chrome: `118.0.5993.70`
   音量の確認をする間隔[ms]
 - face  
   画像一覧 最大 10 こまで
-  - normal  
+  - normal
     通常時の顔
   - mouth_half_open
     口が半開きの顔
