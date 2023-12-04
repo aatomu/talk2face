@@ -144,15 +144,16 @@
   const mouthHalf = 1
   const mouthOpen = 2
   let mouthStep = 0;          // 口の状態
-  let isMouthUpdate = 0;    // 口を更新させるか
   let shouldMouthOpen = true; // 口を開かせるか
   let mouthAnimationCount = 0;
   setInterval(async function () {
     if (!micEnabled) {
       return
     }
+
     // 口の処理
     if (mouthAnimationCount == config.mouth.animation_time) {
+      let isMouthUpdate = 0;    // 口を更新させるか
       mouthAnimationCount = 0
       if (shouldMouthOpen) {
         // フルオープンまでもっていく
@@ -171,13 +172,7 @@
           isMouthUpdate = true
         }
       }
-    }
-    if (mouthAnimationCount < config.mouth.animation_time) {
-      mouthAnimationCount++
-    }
 
-    // 口
-    if (isMouthUpdate) {
       switch (mouthStep) {
         case mouthClose:
           changeFace("normal")
@@ -189,6 +184,9 @@
           changeFace("mouthFull")
           break
       }
+    }
+    if (mouthAnimationCount < config.mouth.animation_time) {
+      mouthAnimationCount++
     }
 
     if (mouthStep == mouthClose) {
