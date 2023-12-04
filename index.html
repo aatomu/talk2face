@@ -173,16 +173,18 @@
         }
       }
 
-      switch (mouthStep) {
-        case mouthClose:
-          changeFace("normal")
-          break
-        case mouthHalf:
-          changeFace("mouthHalf")
-          break
-        case mouthOpen:
-          changeFace("mouthFull")
-          break
+      if (isMouthUpdate) {
+        switch (mouthStep) {
+          case mouthClose:
+            changeFace("normal")
+            break
+          case mouthHalf:
+            changeFace("mouthHalf")
+            break
+          case mouthOpen:
+            changeFace("mouthFull")
+            break
+        }
       }
     }
     if (mouthAnimationCount < config.mouth.animation_time) {
