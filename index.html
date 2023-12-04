@@ -223,7 +223,8 @@
         case 4:
           changeFace("normal")
           blinkStep = 0
-          blinkCoolDown = Math.floor((Math.random() * (config.blink.cool_down_max - config.blink.cool_down_min)) + config.blink.cool_down_min)
+          const range = config.blink.cool_down_max - config.blink.cool_down_min
+          blinkCoolDown = Math.floor((Math.random() * range) + config.blink.cool_down_min)
           break
       }
     }
