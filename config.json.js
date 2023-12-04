@@ -1,5 +1,6 @@
 window.config =
 {
+  "background_color":"#800080",
   "blink": {
     "cool_down_min": 200,
     "cool_down_max": 1000,

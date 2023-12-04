@@ -13,7 +13,6 @@
     body {
       margin: 0;
       overflow: hidden;
-      background-color: rgba(0, 0, 0, 0);
     }
 
     .main {
@@ -45,7 +44,6 @@
     .invisible {
       opacity: 0;
     }
-
   </style>
 </head>
 
@@ -65,6 +63,9 @@
 
 <script src="config.json.js"></script>
 <script>
+  // Set background Color
+  document.body.style.backgroundColor = config.background_color
+
   const selectInputDevice = document.getElementById("selectInputDevice")
   const info = document.getElementById("info")
 
@@ -116,13 +117,13 @@
         const source = audioCtx.createMediaStreamSource(stream);
         source.connect(analyser);
         // 更新
-        let n = 0
         setInterval(function () {
           analyser.getByteFrequencyData(spectrumData)
           // 口を開かせるかどうか
           let isMouthOpenAttacked = false
+          const attack = 256 * (config.mouth.attack / 100)
           spectrumData.forEach((value) => {
-            if (value > 256 * (config.mouth.attack / 100)) {
+            if (value > attack) {
               isMouthOpenAttacked = true
             }
           })
@@ -139,81 +140,102 @@
   })
 
   // 画像の処理
+  const mouthClose = 0
+  const mouthHalf = 1
+  const mouthOpen = 2
   let mouthStep = 0;          // 口の状態
-  let beforeMouthStep = 0;    // 1ループ前の口の状態
+  let isMouthUpdate = 0;    // 口を更新させるか
   let shouldMouthOpen = true; // 口を開かせるか
   let mouthAnimationCount = 0;
-  setInterval(function () {
-    if (micEnabled) {
-      // 口の処理
-      beforeMouthStep = mouthStep
-      if (mouthAnimationCount == config.mouth.animation_time) {
-        mouthAnimationCount = 0
-        if (shouldMouthOpen) { // 開ける
-          mouthStep = Math.min(mouthStep + 1, 2)
-        } else { // 閉じる
-          mouthStep = Math.max(mouthStep - 1, 0)
+  setInterval(async function () {
+    if (!micEnabled) {
+      return
+    }
+    // 口の処理
+    if (mouthAnimationCount == config.mouth.animation_time) {
+      mouthAnimationCount = 0
+      if (shouldMouthOpen) {
+        // フルオープンまでもっていく
+        if (mouthStep < mouthOpen) {
+          mouthStep++
+          isMouthUpdate = true
+        }
+        // フルオープンならランダムで閉じる
+        if (mouthStep == mouthOpen && Math.random() > 0.9) {
+          mouthStep = 1
+        }
+      } else {
+        // フルクローズでもっていく
+        if (mouthStep > mouthClose) {
+          mouthStep--
+          isMouthUpdate = true
         }
       }
-      mouthAnimationCount = Math.min(mouthAnimationCount + 1, config.mouth.animation_time)
-      // 口
-      if (beforeMouthStep != mouthStep) {
-        switch (mouthStep) {
-          case 0:
-            changeFace("normal")
-            break
-          case 1:
-            changeFace("mouthHalf")
-            break
-          case 2:
-            changeFace("mouthFull")
-            break
-        }
-      }
+    }
+    if (mouthAnimationCount < config.mouth.animation_time) {
+      mouthAnimationCount++
+    }
 
-      if (mouthStep == 0) {
-        Blink()
+    // 口
+    if (isMouthUpdate) {
+      switch (mouthStep) {
+        case mouthClose:
+          changeFace("normal")
+          break
+        case mouthHalf:
+          changeFace("mouthHalf")
+          break
+        case mouthOpen:
+          changeFace("mouthFull")
+          break
       }
+    }
+
+    if (mouthStep == mouthClose) {
+      Blink()
     }
   }, 1)
 
   // 瞬き
   let blinkStep = 0; // 口の状態
   let blinkCoolDown = 500; // 瞬きの間隔
-  let blinkCoolDownCount = 0;
   let blinkAnimationCount = 0;
   function Blink() {
-    if (blinkCoolDownCount == blinkCoolDown) {
-      if (blinkAnimationCount == config.blink.animation_time) {
-        blinkStep++
-        blinkAnimationCount = 0
-        switch (blinkStep) {
-          case 1:
-            changeFace("eyeHalf")
-            break
-          case 2:
-            changeFace("eyeFull")
-            break
-          case 3:
-            changeFace("eyeHalf")
-            break
-          case 4:
-            changeFace("normal")
-            blinkStep = 0
-            blinkCoolDownCount = 0
-            blinkCoolDown = Math.floor((Math.random() * (config.blink.cool_down_max - config.blink.cool_down_min)) + config.blink.cool_down_min)
-            break
-        }
-      }
-      blinkAnimationCount = Math.min(blinkAnimationCount + 1, config.blink.animation_time)
+    // CoolDown Check
+    if (blinkCoolDown != 0) {
+      blinkCoolDown--
+      return
     }
-    blinkCoolDownCount = Math.min(blinkCoolDownCount + 1, blinkCoolDown)
+
+    if (blinkAnimationCount == config.blink.animation_time) {
+      blinkStep++
+      blinkAnimationCount = 0
+      switch (blinkStep) {
+        case 1:
+          changeFace("eyeHalf")
+          break
+        case 2:
+          changeFace("eyeFull")
+          break
+        case 3:
+          changeFace("eyeHalf")
+          break
+        case 4:
+          changeFace("normal")
+          blinkStep = 0
+          blinkCoolDown = Math.floor((Math.random() * (config.blink.cool_down_max - config.blink.cool_down_min)) + config.blink.cool_down_min)
+          break
+      }
+    }
+    if (blinkAnimationCount < config.blink.animation_time) {
+      blinkAnimationCount++
+    }
   }
 
   // 特殊処理
   let faceLock = false
   document.body.addEventListener("keydown", function (e) {
-    console.log(e)
+    console.log(`Keydown: ${e}`)
     switch (true) {
       case (e.shiftKey && e.key == "Escape"):
         window.close()
