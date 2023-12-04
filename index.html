@@ -207,29 +207,29 @@
       return
     }
 
-    if (blinkAnimationCount == config.blink.animation_time) {
-      blinkStep++
-      blinkAnimationCount = 0
-      switch (blinkStep) {
-        case 1:
-          changeFace("eyeHalf")
-          break
-        case 2:
-          changeFace("eyeFull")
-          break
-        case 3:
-          changeFace("eyeHalf")
-          break
-        case 4:
-          changeFace("normal")
-          blinkStep = 0
-          const range = config.blink.cool_down_max - config.blink.cool_down_min
-          blinkCoolDown = Math.floor((Math.random() * range) + config.blink.cool_down_min)
-          break
-      }
+    if (blinkAnimationCount != 0) {
+      blinkAnimationCount--
+      return
     }
-    if (blinkAnimationCount < config.blink.animation_time) {
-      blinkAnimationCount++
+
+    blinkStep++
+    blinkAnimationCount = config.blink.animation_time
+    switch (blinkStep) {
+      case 1:
+        changeFace("eyeHalf")
+        break
+      case 2:
+        changeFace("eyeFull")
+        break
+      case 3:
+        changeFace("eyeHalf")
+        break
+      case 4:
+        changeFace("normal")
+        blinkStep = 0
+        const range = config.blink.cool_down_max - config.blink.cool_down_min
+        blinkCoolDown = Math.floor((Math.random() * range) + config.blink.cool_down_min)
+        break
     }
   }
 

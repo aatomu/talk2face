@@ -13,6 +13,13 @@ window.config =
   "voice_check": 5,
   "face": [
     {
+      "normal": "aatomu-normal_alpha.png",
+      "mouth_half_open": "aatomu-mouth-half_alpha.png",
+      "mouth_full_open": "aatomu-mouth-full_alpha.png",
+      "eye_half_open": "aatomu-eye-half_alpha.png",
+      "eye_full_open": "aatomu-eye-full_alpha.png"
+    },
+    {
       "normal": "aatomu-iris-normal.png",
       "mouth_half_open": "aatomu-iris-mouth-half.png",
       "mouth_full_open": "aatomu-iris-mouth-full.png",
